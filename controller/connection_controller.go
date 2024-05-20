@@ -47,9 +47,8 @@ func updateFile(conn net.Conn) {
 	common.Log.Info("File received successfully")
 }
 
-
 func TcpConnectionManger() {
-	for  {
+	for {
 		conn, err := net.Dial("tcp", common.Conf.Address)
 		if err != nil {
 			common.Log.Error(fmt.Sprintf("connected to %s failed", common.Conf.Address))
@@ -62,8 +61,15 @@ func TcpConnectionManger() {
 		}
 		common.Log.Info(fmt.Sprintf("successfully connected to %s", conn.RemoteAddr().String()))
 
-		// 接收服务器的消息
 		buffer := make([]byte, 1024)
+		content := make(chan *string)
+
+		go func() {
+			for val := range content {
+				fmt.Println(*val)
+			}
+		}()
+		//readError := make(chan error)
 		for {
 			bytesRead, err := conn.Read(buffer)
 			if err != nil {
@@ -72,7 +78,22 @@ func TcpConnectionManger() {
 			if string(buffer[:bytesRead]) == "START" {
 				// 更新文件
 				common.Log.Info("Received start updating identifier")
-				updateFile(conn)
+				buffer := make([]byte, 1024)
+				for {
+					bytesRead, err := conn.Read(buffer)
+					if err != nil {
+						common.Log.Error("Error reading from connection:")
+						break
+					}
+					// 检查是否收到结束标识符
+					if string(buffer[:bytesRead]) == "END" {
+						common.Log.Info("Received end update identifier")
+						break
+					}
+					contentString := string(buffer[:bytesRead])
+					content <- &contentString
+				}
+				common.Log.Info("File received successfully")
 			}
 		}
 		conn.Close()
