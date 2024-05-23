@@ -35,8 +35,20 @@ func GetUserIDAndGroupID(username, groupname string) (int, int, error) {
 
 // WriteContentToFile 整合内容并内容到文件
 func WriteContentToFile(scriptInfo *ScriptInfo, scriptContent *string) error {
-	// 生成文件内容
 	var info = *scriptInfo
+	var results = false
+	// 校验脚本路径是否合法
+	for _, script := range common.Conf.Script {
+		if script == info.FileInfo.Path {
+			results = true
+		}
+	}
+	if !results {
+		common.Log.Error("The provided path is inconsistent with the client path")
+		return fmt.Errorf("The provided path %s is inconsistent with the client path ", info.FileInfo.Path)
+	}
+
+	// 生成文件内容
 	commentContent := fmt.Sprintf("#!%s\n# Author: %s\n# Description: %s\n", info.Language, info.Author, info.Description)
 	var crontabContent string
 	if info.CrontabEnable == true {
@@ -44,8 +56,15 @@ func WriteContentToFile(scriptInfo *ScriptInfo, scriptContent *string) error {
 	}
 	fileContent := commentContent + crontabContent + *scriptContent
 
+	// string转换为8进制
+	perm, err := strconv.ParseUint(info.FileInfo.Perm, 8, 32)
+	if err != nil {
+		common.Log.Error("parse file permissions failed %s", err)
+		return fmt.Errorf("parse file permissions failed %s", err)
+	}
+
 	// 写入新文件
-	err := ioutil.WriteFile(info.FileInfo.Path, []byte(fileContent), fs.FileMode(info.FileInfo.Perm))
+	err = ioutil.WriteFile(info.FileInfo.Path, []byte(fileContent), fs.FileMode(perm))
 	if err != nil {
 		common.Log.Error("write new file failed", err)
 		return fmt.Errorf("write new file failed %s", err)

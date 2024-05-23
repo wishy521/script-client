@@ -5,7 +5,8 @@ import (
 	"scripts-client/common"
 )
 
-func TcpConnectionManger(conn net.Conn, content chan<- *string) {
+// HandleConnection TCP连接管理
+func HandleConnection(conn net.Conn, content chan<- *string) {
 	defer conn.Close()
 
 	buffer := make([]byte, 1024)
@@ -33,7 +34,7 @@ func TcpConnectionManger(conn net.Conn, content chan<- *string) {
 				contentString := string(buffer[:bytesRead])
 				content <- &contentString
 			}
-			common.Log.Info("File received successfully")
+			common.Log.Info("Received content successfully")
 		}
 	}
 }

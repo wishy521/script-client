@@ -27,7 +27,7 @@ func main() {
 				common.Log.Error("write content to the file failed")
 				break
 			}
-			common.Log.Info(fmt.Sprintf("%s", scriptInfo.FileInfo.Path))
+			common.Log.Info(fmt.Sprintf("updated file %s successfully", scriptInfo.FileInfo.Path))
 		}
 	}()
 
@@ -43,6 +43,6 @@ func main() {
 			continue
 		}
 		common.Log.Info(fmt.Sprintf("successfully connected to %s", conn.RemoteAddr().String()))
-		controller.TcpConnectionManger(conn, content)
+		controller.HandleConnection(conn, content)
 	}
 }

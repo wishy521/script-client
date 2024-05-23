@@ -14,7 +14,7 @@ type ScriptInfo struct {
 		Path  string `json:"Path"`
 		Owner string `json:"Owner"`
 		Group string `json:"Group"`
-		Perm  uint32 `json:"Perm"`
+		Perm  string `json:"Perm"`
 	} `json:"FileInfo"`
 	CrontabEnable bool `json:"CrontabEnable"`
 	CrontabData   struct {
