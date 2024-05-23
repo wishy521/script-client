@@ -35,51 +35,54 @@ func GetUserIDAndGroupID(username, groupname string) (int, int, error) {
 
 // WriteContentToFile 整合内容并内容到文件
 func WriteContentToFile(scriptInfo *ScriptInfo, scriptContent *string) error {
-	var info = *scriptInfo
 	var results = false
 	// 校验脚本路径是否合法
 	for _, script := range common.Conf.Script {
-		if script == info.FileInfo.Path {
+		if script == scriptInfo.FileInfo.Path {
 			results = true
 		}
 	}
 	if !results {
 		common.Log.Error("The provided path is inconsistent with the client path")
-		return fmt.Errorf("The provided path %s is inconsistent with the client path ", info.FileInfo.Path)
+		return fmt.Errorf("The provided path %s is inconsistent with the client path ", scriptInfo.FileInfo.Path)
 	}
 
 	// 生成文件内容
-	commentContent := fmt.Sprintf("#!%s\n# Author: %s\n# Description: %s\n", info.Language, info.Author, info.Description)
+	commentContent := fmt.Sprintf("#!%s\n# Author: %s\n# Description: %s\n", scriptInfo.Language, scriptInfo.Author, scriptInfo.Description)
 	var crontabContent string
-	if info.CrontabEnable == true {
-		crontabContent = fmt.Sprintf("# crontab: %s %s %s", info.CrontabData.Time, info.CrontabData.Command, info.CrontabData.Arg)
+	if scriptInfo.CrontabEnable == true {
+		crontabContent = fmt.Sprintf("# crontab: %s %s %s", scriptInfo.CrontabData.Time, scriptInfo.CrontabData.Command, scriptInfo.CrontabData.Arg)
 	}
 	fileContent := commentContent + crontabContent + *scriptContent
 
-	// string转换为8进制
-	perm, err := strconv.ParseUint(info.FileInfo.Perm, 8, 32)
+	// 写入新文件
+	perm, err := strconv.ParseUint(scriptInfo.FileInfo.Perm, 8, 32)
 	if err != nil {
 		common.Log.Error("parse file permissions failed %s", err)
 		return fmt.Errorf("parse file permissions failed %s", err)
 	}
-
-	// 写入新文件
-	err = ioutil.WriteFile(info.FileInfo.Path, []byte(fileContent), fs.FileMode(perm))
+	err = ioutil.WriteFile(scriptInfo.FileInfo.Path, []byte(fileContent), fs.FileMode(perm))
 	if err != nil {
 		common.Log.Error("write new file failed", err)
 		return fmt.Errorf("write new file failed %s", err)
 	}
+
 	// 文件属主
-	uid, gid, err := GetUserIDAndGroupID(info.FileInfo.Owner, info.FileInfo.Group)
+	uid, gid, err := GetUserIDAndGroupID(scriptInfo.FileInfo.Owner, scriptInfo.FileInfo.Group)
 	if err != nil {
 		common.Log.Error("get UserID and GroupID failed", err)
 		return fmt.Errorf("get UserID and GroupID failed %s", err)
 	}
-	err = os.Chown(info.FileInfo.Path, uid, gid)
+	err = os.Chown(scriptInfo.FileInfo.Path, uid, gid)
 	if err != nil {
 		common.Log.Error("set file owner failed", err)
 		return fmt.Errorf("set file owner failed: %s", err)
 	}
-	common.Log.Info(fmt.Sprintf("script file %s created successfully", info.FileInfo.Path))
+	err = os.Chmod(scriptInfo.FileInfo.Path, os.FileMode(perm))
+	if err != nil {
+		common.Log.Error("set file authority failed", err)
+		return fmt.Errorf("set file authority failed: %s", err)
+	}
+	common.Log.Info(fmt.Sprintf("script file %s created successfully", scriptInfo.FileInfo.Path))
 	return nil
 }
